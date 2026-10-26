@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Mata Kuliah — Student Grade Calculator</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>📊 GradeCalc</h2>
+      </div>
+      <ul class="sidebar-menu">
+        <li><a href="/"><span>🏠</span> Dashboard</a></li>
+        <li><a href="/students"><span>👨‍🎓</span> Data Mahasiswa</a></li>
+        <li><a href="/courses" class="active"><span>📚</span> Data Mata Kuliah</a></li>
+        <li><a href="/grades"><span>📝</span> Hasil & Input Nilai</a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <div class="user-profile">
+          <span id="sidebarUserName" class="user-name">Memuat...</span>
+          <span id="sidebarUserRole" class="user-role">-</span>
+        </div>
+        <button class="btn-logout" onclick="handleLogout()">🚪 Keluar</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <header class="top-bar">
+        <h1>Data Mata Kuliah</h1>
+        <button id="btnOpenAddCourse" class="btn btn-primary dosen-admin-only">➕ Tambah Mata Kuliah</button>
+      </header>
+
+      <div class="content-body">
+        <div id="courseAlert" class="alert"></div>
+
+        <div class="card">
+          <!-- Tabel Data Mata Kuliah -->
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 60px;">No</th>
+                  <th>Kode MK</th>
+                  <th>Nama Mata Kuliah</th>
+                  <th>Bobot SKS</th>
+                  <th class="dosen-admin-only" style="width: 140px;">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="courseTableBody">
+                <tr>
+                  <td colspan="5" style="text-align: center; color: var(--text-muted);">Memuat data mata kuliah...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal Tambah / Edit Mata Kuliah -->
+  <div id="courseModal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="courseModalTitle">Tambah Mata Kuliah Baru</h3>
+        <button class="btn-close btn-close-modal">&times;</button>
+      </div>
+      <form id="courseForm">
+        <input type="hidden" id="courseId">
+        <div class="form-group">
+          <label for="inputCode">Kode Mata Kuliah</label>
+          <input type="text" id="inputCode" class="form-control" placeholder="Contoh: IF101" required>
+        </div>
+        <div class="form-group">
+          <label for="inputCourseName">Nama Mata Kuliah</label>
+          <input type="text" id="inputCourseName" class="form-control" placeholder="Contoh: Algoritma & Pemrograman" required>
+        </div>
+        <div class="form-group">
+          <label for="inputCredits">Bobot SKS (1 s.d. 6)</label>
+          <input type="number" id="inputCredits" class="form-control" min="1" max="6" value="3" required>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-close-modal">Batal</button>
+          <button type="submit" class="btn btn-primary">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/static/js/main.js"></script>
+  <script src="/static/js/courses.js"></script>
+</body>
+</html>

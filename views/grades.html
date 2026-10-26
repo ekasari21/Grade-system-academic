@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hasil & Input Nilai — Student Grade Calculator</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>📊 GradeCalc</h2>
+      </div>
+      <ul class="sidebar-menu">
+        <li><a href="/"><span>🏠</span> Dashboard</a></li>
+        <li><a href="/students"><span>👨‍🎓</span> Data Mahasiswa</a></li>
+        <li><a href="/courses"><span>📚</span> Data Mata Kuliah</a></li>
+        <li><a href="/grades" class="active"><span>📝</span> Hasil & Input Nilai</a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <div class="user-profile">
+          <span id="sidebarUserName" class="user-name">Memuat...</span>
+          <span id="sidebarUserRole" class="user-role">-</span>
+        </div>
+        <button class="btn-logout" onclick="handleLogout()">🚪 Keluar</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <header class="top-bar">
+        <h1>Hasil & Input Nilai</h1>
+        <button id="btnOpenAddGrade" class="btn btn-primary dosen-admin-only">➕ Input Nilai Baru</button>
+      </header>
+
+      <div class="content-body">
+        <div id="gradeAlert" class="alert"></div>
+
+        <div class="card">
+          <!-- Filter Bar -->
+          <div class="filter-bar">
+            <input type="text" id="searchGrade" class="form-control search-input" placeholder="🔍 Cari nama atau NIM mahasiswa...">
+            
+            <select id="filterCourse" class="form-control" style="max-width: 240px;">
+              <option value="">Semua Mata Kuliah</option>
+            </select>
+
+            <select id="filterLetter" class="form-control" style="max-width: 160px;">
+              <option value="">Semua Grade</option>
+              <option value="A">Grade A</option>
+              <option value="AB">Grade AB</option>
+              <option value="B">Grade B</option>
+              <option value="BC">Grade BC</option>
+              <option value="C">Grade C</option>
+              <option value="D">Grade D</option>
+              <option value="E">Grade E</option>
+            </select>
+          </div>
+
+          <!-- Tabel Penilaian -->
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 50px;">No</th>
+                  <th>Mahasiswa</th>
+                  <th>Mata Kuliah</th>
+                  <th>Tugas (20%)</th>
+                  <th>Kuis (20%)</th>
+                  <th>UTS (25%)</th>
+                  <th>UAS (35%)</th>
+                  <th>Nilai Akhir</th>
+                  <th>Grade</th>
+                  <th>Predikat</th>
+                  <th class="dosen-admin-only" style="width: 140px;">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="gradeTableBody">
+                <tr>
+                  <td colspan="11" style="text-align: center; color: var(--text-muted);">Memuat data penilaian...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal Input / Edit Nilai -->
+  <div id="gradeModal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="gradeModalTitle">Input Penilaian Mahasiswa</h3>
+        <button class="btn-close btn-close-modal">&times;</button>
+      </div>
+      <form id="gradeForm">
+        <input type="hidden" id="gradeId">
+        
+        <div class="form-group">
+          <label for="gradeStudentId">Mahasiswa</label>
+          <select id="gradeStudentId" class="form-control" required>
+            <option value="">-- Pilih Mahasiswa --</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="gradeCourseId">Mata Kuliah</label>
+          <select id="gradeCourseId" class="form-control" required>
+            <option value="">-- Pilih Mata Kuliah --</option>
+          </select>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label for="inputAssignment">Tugas (Bobot 20%)</label>
+            <input type="number" step="0.01" id="inputAssignment" class="form-control" min="0" max="100" value="0" required>
+          </div>
+
+          <div class="form-group">
+            <label for="inputQuiz">Kuis (Bobot 20%)</label>
+            <input type="number" step="0.01" id="inputQuiz" class="form-control" min="0" max="100" value="0" required>
+          </div>
+
+          <div class="form-group">
+            <label for="inputMidterm">UTS (Bobot 25%)</label>
+            <input type="number" step="0.01" id="inputMidterm" class="form-control" min="0" max="100" value="0" required>
+          </div>
+
+          <div class="form-group">
+            <label for="inputFinalExam">UAS (Bobot 35%)</label>
+            <input type="number" step="0.01" id="inputFinalExam" class="form-control" min="0" max="100" value="0" required>
+          </div>
+        </div>
+
+        <!-- Box Kalkulasi Real-time Preview -->
+        <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 14px; margin-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 0.8rem; color: #64748b; font-weight: 600;">SIMULASI NILAI AKHIR</div>
+            <div style="font-size: 1.5rem; font-weight: 700; color: #2563eb;" id="previewScore">0.00</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 0.8rem; color: #64748b; font-weight: 600;">GRADE & PREDIKAT</div>
+            <div style="font-size: 1.1rem; font-weight: 700; color: #0f172a;" id="previewLetter">E (Sangat Kurang)</div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-close-modal">Batal</button>
+          <button type="submit" class="btn btn-primary">Simpan Penilaian</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/static/js/main.js"></script>
+  <script src="/static/js/grades.js"></script>
+</body>
+</html>

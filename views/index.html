@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Student Grade Calculator</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>📊 GradeCalc</h2>
+      </div>
+      <ul class="sidebar-menu">
+        <li><a href="/" class="active"><span>🏠</span> Dashboard</a></li>
+        <li><a href="/students"><span>👨‍🎓</span> Data Mahasiswa</a></li>
+        <li><a href="/courses"><span>📚</span> Data Mata Kuliah</a></li>
+        <li><a href="/grades"><span>📝</span> Hasil & Input Nilai</a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <div class="user-profile">
+          <span id="sidebarUserName" class="user-name">Memuat...</span>
+          <span id="sidebarUserRole" class="user-role">-</span>
+        </div>
+        <button class="btn-logout" onclick="handleLogout()">🚪 Keluar</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <header class="top-bar">
+        <h1>Dashboard Ringkasan</h1>
+      </header>
+
+      <div class="content-body">
+        <div id="pageAlert" class="alert"></div>
+
+        <!-- Statistik Kartu -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span id="cardStudentsLabel" class="stat-title">TOTAL MAHASISWA</span>
+            <span id="statStudents" class="stat-value">0</span>
+          </div>
+          <div class="stat-card">
+            <span id="cardCoursesLabel" class="stat-title">TOTAL MATA KULIAH</span>
+            <span id="statCourses" class="stat-value">0</span>
+          </div>
+          <div class="stat-card">
+            <span id="cardGradesLabel" class="stat-title">TOTAL PENILAIAN</span>
+            <span id="statGrades" class="stat-value">0</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-title">RATA-RATA NILAI AKHIR</span>
+            <span id="statAverage" class="stat-value">0.00</span>
+          </div>
+        </div>
+
+        <!-- Sebaran Nilai Huruf -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Distribusi Nilai Huruf & Predikat</h3>
+          </div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Grade</th>
+                  <th>Rentang Nilai</th>
+                  <th>Predikat</th>
+                  <th>Jumlah Mahasiswa</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge-grade badge-A">A</span></td>
+                  <td>85.00 – 100.00</td>
+                  <td>Sangat Baik</td>
+                  <td><strong id="countGradeA">0</strong></td>
+                </tr>
+                <tr>
+                  <td><span class="badge-grade badge-AB">AB</span></td>
+                  <td>80.00 – 84.99</td>
+                  <td>Baik Sekali</td>
+                  <td><strong id="countGradeAB">0</strong></td>
+                </tr>
+                <tr>
+                  <td><span class="badge-grade badge-B">B</span></td>
+                  <td>75.00 – 79.99</td>
+                  <td>Baik</td>
+                  <td><strong id="countGradeB">0</strong></td>
+                </tr>
+                <tr>
+                  <td><span class="badge-grade badge-BC">BC</span></td>
+                  <td>70.00 – 74.99</td>
+                  <td>Cukup Baik</td>
+                  <td><strong id="countGradeBC">0</strong></td>
+                </tr>
+                <tr>
+                  <td><span class="badge-grade badge-C">C</span></td>
+                  <td>65.00 – 69.99</td>
+                  <td>Cukup</td>
+                  <td><strong id="countGradeC">0</strong></td>
+                </tr>
+                <tr>
+                  <td><span class="badge-grade badge-D">D</span></td>
+                  <td>50.00 – 64.99</td>
+                  <td>Kurang</td>
+                  <td><strong id="countGradeD">0</strong></td>
+                </tr>
+                <tr>
+                  <td><span class="badge-grade badge-E">E</span></td>
+                  <td>0.00 – 49.99</td>
+                  <td>Sangat Kurang</td>
+                  <td><strong id="countGradeE">0</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Skema Bobot Penilaian -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Skema Bobot Penilaian (Weighted Average)</h3>
+          </div>
+          <p style="color: var(--text-muted); margin-bottom: 14px; font-size: 0.95rem;">
+            Perhitungan nilai akhir dihitung secara otomatis oleh backend dengan rumus:
+            <br>
+            <code>Nilai Akhir = (Tugas × 0.20) + (Kuis × 0.20) + (UTS × 0.25) + (UAS × 0.35)</code>
+          </p>
+          <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+            <div style="background: #f1f5f9; padding: 12px 20px; border-radius: 8px; flex: 1; min-width: 140px;">
+              <div style="font-size: 0.8rem; color: #64748b; font-weight: 600;">TUGAS</div>
+              <div style="font-size: 1.3rem; font-weight: 700; color: #2563eb;">20%</div>
+            </div>
+            <div style="background: #f1f5f9; padding: 12px 20px; border-radius: 8px; flex: 1; min-width: 140px;">
+              <div style="font-size: 0.8rem; color: #64748b; font-weight: 600;">KUIS</div>
+              <div style="font-size: 1.3rem; font-weight: 700; color: #2563eb;">20%</div>
+            </div>
+            <div style="background: #f1f5f9; padding: 12px 20px; border-radius: 8px; flex: 1; min-width: 140px;">
+              <div style="font-size: 0.8rem; color: #64748b; font-weight: 600;">UTS</div>
+              <div style="font-size: 1.3rem; font-weight: 700; color: #2563eb;">25%</div>
+            </div>
+            <div style="background: #f1f5f9; padding: 12px 20px; border-radius: 8px; flex: 1; min-width: 140px;">
+              <div style="font-size: 0.8rem; color: #64748b; font-weight: 600;">UAS</div>
+              <div style="font-size: 1.3rem; font-weight: 700; color: #2563eb;">35%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/js/main.js"></script>
+  <script src="/static/js/dashboard.js"></script>
+</body>
+</html>
