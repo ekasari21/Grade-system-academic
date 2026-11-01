@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Masuk — Student Grade Calculator</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+</head>
+<body>
+  <div class="auth-wrapper">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h1>Grade Calculator</h1>
+        <p>Silakan masuk ke akun Anda</p>
+      </div>
+
+      <div id="authAlert" class="alert"></div>
+
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="loginEmail">Email</label>
+          <input type="email" id="loginEmail" class="form-control" placeholder="nama@kampus.ac.id" required>
+        </div>
+
+        <div class="form-group">
+          <label for="loginPassword">Kata Sandi</label>
+          <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">Masuk</button>
+      </form>
+
+      <div style="text-align: center; margin-top: 24px; font-size: 0.9rem; color: var(--text-muted);">
+        Belum memiliki akun? <a href="/register" style="color: var(--primary); font-weight: 600; text-decoration: none;">Daftar di sini</a>
+      </div>
+
+      <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); text-align: center;">
+        <a href="/public" style="display: inline-flex; align-items: center; gap: 6px; color: #0284c7; font-weight: 700; text-decoration: none; font-size: 0.9rem; background: #f0f9ff; padding: 8px 16px; border-radius: 6px; border: 1px solid #bae6fd;">
+          <span>🔍</span> Cari Nilai Publik Berdasarkan NIM ➔
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/main.js"></script>
+  <script src="/static/js/auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hasil & Penilaian CPL OBE — Student Grade Calculator</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>📊 GradeCalc</h2>
+      </div>
+      <ul class="sidebar-menu">
+        <li><a href="/"><span>🏠</span> Dashboard</a></li>
+        <li><a href="/recap"><span>📊</span> Rekap Nilai & CPL</a></li>
+        <li><a href="/public"><span>🌐</span> Portal Publik (NIM)</a></li>
+        <li><a href="/grades" class="active"><span>📝</span> Hasil & Input Nilai</a></li>
+        <li><a href="/students"><span>👨‍🎓</span> Data Mahasiswa</a></li>
+        <li><a href="/courses"><span>📚</span> Data Mata Kuliah</a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <div class="user-profile">
+          <span id="sidebarUserName" class="user-name">Memuat...</span>
+          <span id="sidebarUserRole" class="user-role">-</span>
+        </div>
+        <button class="btn-logout" onclick="handleLogout()">🚪 Keluar</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <header class="top-bar">
+        <div>
+          <h1>Penilaian OBE Berbasis CPL</h1>
+          <p style="font-size: 0.85rem; color: #64748b; margin: 4px 0 0 0;">Evaluasi pembelajaran berbasis ketercapaian Capaian Pembelajaran Lulusan (Target minimal: 70)</p>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;" class="dosen-admin-only">
+          <button id="btnOpenSimulationModal" class="btn btn-secondary">✨ Simulasi 5 Mahasiswa OBE</button>
+          <button id="btnOpenClassRecap" class="btn btn-info">📊 Rekapitulasi Kelas & CQI</button>
+          <button id="btnOpenAddGrade" class="btn btn-primary">➕ Input Nilai Baru</button>
+        </div>
+      </header>
+
+      <div class="content-body">
+        <div id="gradeAlert" class="alert"></div>
+
+        <!-- Banner Info OBE -->
+        <div class="card" style="background: #f0fdf4; border-left: 4px solid #16a34a; padding: 14px 20px; margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div>
+              <strong style="color: #166534; font-size: 0.95rem;">🎯 Sistem Penilaian OBE Berbasis Capaian Pembelajaran Lulusan (CPL):</strong>
+              <div style="font-size: 0.85rem; color: #15803d; margin-top: 4px;">
+                • <strong>Performa Akademik (Nilai Akhir):</strong> Σ (Nilai Komponen × Bobot), Total Bobot = 100%.<br>
+                • <strong>Penguasaan Kompetensi (Nilai CPL):</strong> Rata-rata butir yang mengukur CPL tersebut. Target minimal: <strong>≥ 70.0</strong>.<br>
+                • <strong>Input Serentak:</strong> Seluruh mahasiswa dinilai sekaligus dalam 1 tabel matriks tanpa perlu input satu per satu.
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <span class="badge-cpl-success" style="font-size: 0.85rem; padding: 6px 12px;">Target Kelulusan CPL: ≥ 70</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab Navigasi Mode Penilaian -->
+        <div class="nav-tabs-wrapper dosen-admin-only">
+          <button type="button" class="nav-tab-btn active" data-target="#tabBatchGrading">
+            <span>📝</span> Input Nilai Serentak (Matriks OBE)
+          </button>
+          <button type="button" class="nav-tab-btn" data-target="#tabGradeList">
+            <span>📊</span> Daftar & Rekapitulasi Riwayat Nilai
+          </button>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- TAB 1: PENGINPUTAN NILAI SERENTAK (MATRIKS OBE)          -->
+        <!-- ======================================================== -->
+        <div id="tabBatchGrading" class="tab-pane active dosen-admin-only">
+          <div class="card">
+            <!-- Toolbar Kontrol Batch -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px;">
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <label for="batchCourseSelect" style="font-weight: 700; font-size: 0.88rem; color: #1e293b; white-space: nowrap;">Pilih Mata Kuliah:</label>
+                <select id="batchCourseSelect" class="form-control" style="min-width: 280px; font-weight: 600;">
+                  <option value="">Memuat data mata kuliah...</option>
+                </select>
+              </div>
+
+              <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                <button type="button" id="btnBatchSimulate" class="btn btn-secondary btn-sm" title="Otomatis isi 5 Mahasiswa persis simulasi contoh OBE">
+                  ✨ Isi Simulasi 5 Kasus OBE
+                </button>
+                <button type="button" id="btnOpenManageItemsModal" class="btn btn-secondary btn-sm" title="Kelola butir penilaian langsung di sini">
+                  ⚙️ Kelola Butir Penilaian MK
+                </button>
+                <button type="button" id="btnQuickAddBatchItem" class="btn btn-secondary btn-sm" title="Tambah kolom butir asesmen baru">
+                  ➕ Tambah Butir
+                </button>
+                <button type="button" id="btnBatchReset" class="btn btn-outline-secondary btn-sm" title="Bersihkan angka penilaian">
+                  🧹 Bersihkan Form
+                </button>
+                <button type="button" id="btnBatchSaveTop" class="btn btn-primary btn-sm btn-batch-save" style="font-weight: 700; padding: 7px 18px;">
+                  💾 Simpan Semua Nilai Serentak
+                </button>
+              </div>
+            </div>
+
+            <!-- Ringkasan Skema Asesmen MK Terpilih -->
+            <div id="batchSchemeSummary" style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; font-size: 0.82rem; color: #1e40af; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+              <div>
+                <strong id="batchSchemeTitle">🎯 Skema Butir Penilaian:</strong>
+                <span id="batchSchemeList" style="margin-left: 4px;">Memuat butir asesmen...</span>
+              </div>
+              <div id="batchSchemeWeights" style="font-weight: 700; color: #1d4ed8;">
+                Total Bobot: 100%
+              </div>
+            </div>
+
+            <!-- Matriks Tabel Penginputan Nilai Serentak (Spreadsheet Grid) -->
+            <div class="table-responsive" style="border: 1px solid #cbd5e1; border-radius: 8px; max-height: 540px; overflow-y: auto; background: #ffffff;">
+              <table id="batchMatrixTable" class="matrix-table">
+                <thead id="batchMatrixHead" style="position: sticky; top: 0; z-index: 5; background: #f8fafc;">
+                  <tr>
+                    <th colspan="3" style="background: #f1f5f9; border-bottom: 1px solid #cbd5e1;">Identitas Mahasiswa</th>
+                    <th id="thColGroupItems" colspan="5" style="background: #e0f2fe; color: #0369a1; border-bottom: 1px solid #cbd5e1;">
+                      Butir Komponen Penilaian (Input 0–100)
+                    </th>
+                    <th colspan="2" style="background: #fef3c7; color: #92400e; border-bottom: 1px solid #cbd5e1;">
+                      Hasil Akademik
+                    </th>
+                    <th id="thColGroupCPL" colspan="5" style="background: #dcfce7; color: #166534; border-bottom: 1px solid #cbd5e1;">
+                      Tingkat Penguasaan CPL (OBE Target: ≥70)
+                    </th>
+                  </tr>
+                  <tr id="batchMatrixSubHeader">
+                    <th style="width: 35px;">No</th>
+                    <th style="min-width: 150px; text-align: left;">Nama Mahasiswa</th>
+                    <th style="width: 85px;">NIM</th>
+                    <!-- Kolom butir penilaian dan CPL akan di-render secara dinamis di sini -->
+                  </tr>
+                </thead>
+                <tbody id="batchMatrixBody">
+                  <tr>
+                    <td colspan="15" style="text-align: center; color: var(--text-muted); padding: 24px;">
+                      Pilih mata kuliah untuk memuat matriks penilaian serentak...
+                    </td>
+                  </tr>
+                </tbody>
+                <tfoot id="batchMatrixFoot" style="position: sticky; bottom: 0; z-index: 4; background: #f8fafc; font-weight: 700; border-top: 2px solid #94a3b8;">
+                  <!-- Baris Rata-rata Kelas & Ketercapaian CPL Kelas akan di-render di sini -->
+                </tfoot>
+              </table>
+            </div>
+
+            <!-- Catatan Kaki & Tombol Simpan Bawah -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 16px; padding-top: 12px; border-top: 1px solid #e2e8f0;">
+              <div style="font-size: 0.8rem; color: #64748b; max-width: 600px;">
+                💡 <strong>Tips:</strong> Ketik nilai (0-100) pada setiap kolom butir. Nilai Akhir Akademik, Huruf Mutu, dan Capaian CPL langsung terhitung otomatis secara live. Klik <strong>Simpan Semua Nilai Serentak</strong> untuk menyimpan penilaian seluruh mahasiswa sekaligus.
+              </div>
+              <button type="button" id="btnBatchSaveBottom" class="btn btn-primary btn-batch-save" style="font-weight: 700; padding: 10px 24px; font-size: 0.95rem;">
+                💾 Simpan Semua Nilai Serentak
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- TAB 2: DAFTAR & REKAPITULASI NILAI LAMA                  -->
+        <!-- ======================================================== -->
+        <div id="tabGradeList" class="tab-pane">
+        <div class="card">
+          <!-- Filter Bar -->
+          <div class="filter-bar">
+            <input type="text" id="searchGrade" class="form-control search-input" placeholder="🔍 Cari nama atau NIM mahasiswa...">
+            
+            <select id="filterCourse" class="form-control" style="max-width: 240px;">
+              <option value="">Semua Mata Kuliah</option>
+            </select>
+
+            <select id="filterLetter" class="form-control" style="max-width: 160px;">
+              <option value="">Semua Grade</option>
+              <option value="A">Grade A</option>
+              <option value="AB">Grade AB</option>
+              <option value="B">Grade B</option>
+              <option value="BC">Grade BC</option>
+              <option value="C">Grade C</option>
+              <option value="D">Grade D</option>
+              <option value="E">Grade E</option>
+            </select>
+          </div>
+
+          <!-- Tabel Penilaian OBE -->
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 40px;">No</th>
+                  <th>Mahasiswa</th>
+                  <th>Mata Kuliah</th>
+                  <th>Tugas</th>
+                  <th>Kuis</th>
+                  <th>UTS</th>
+                  <th>UAS</th>
+                  <th>Nilai Akhir</th>
+                  <th>Grade</th>
+                  <th>Predikat</th>
+                  <th style="width: 140px;">Ketercapaian CPL</th>
+                  <th style="width: 130px;">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="gradeTableBody">
+                <tr>
+                  <td colspan="12" style="text-align: center; color: var(--text-muted);">Memuat data penilaian OBE...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal Input / Edit Nilai OBE -->
+  <div id="gradeModal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 880px;">
+      <div class="modal-header">
+        <div>
+          <h3 id="gradeModalTitle">Input Penilaian Pembelajaran Berbasis CPL (OBE)</h3>
+          <p style="font-size: 0.8rem; color: #64748b; margin: 3px 0 0 0;">Nilai Akhir mengukur performa akademik, Nilai CPL mengukur penguasaan kompetensi lulusan</p>
+        </div>
+        <button class="btn-close btn-close-modal">&times;</button>
+      </div>
+      <form id="gradeForm">
+        <input type="hidden" id="gradeId">
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+          <div class="form-group" style="margin: 0;">
+            <label for="gradeStudentId">Mahasiswa</label>
+            <select id="gradeStudentId" class="form-control" required>
+              <option value="">-- Pilih Mahasiswa --</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="margin: 0;">
+            <label for="gradeCourseId">Mata Kuliah</label>
+            <select id="gradeCourseId" class="form-control" required>
+              <option value="">-- Pilih Mata Kuliah --</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Section Pengaturan Dinamis Butir Penilaian (Multiple Tugas, Kuis, UTS, UAS) -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 14px; border-radius: 8px; margin-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+            <div>
+              <strong style="font-size: 0.85rem; color: #334155;">📝 BUTIR KOMPONEN PENILAIAN & PEMETAAN CPL</strong>
+              <div style="font-size: 0.75rem; color: #64748b;">Setiap tugas, kuis, UTS, dan UAS dapat dipecah menjadi beberapa butir dengan CPL & bobot masing-masing</div>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <button type="button" id="btnPresetBalance" class="btn btn-secondary btn-sm" title="Otomatis bagi rata 100% ke seluruh butir yang ada">⚖️ Bagi Rata Bobot</button>
+              <button type="button" id="btnPresetUserExample" class="btn btn-secondary btn-sm" title="Tugas CPL-03 20%, Kuis CPL-02 15%, UTS CPL-04 25%, UAS-A CPL-04 20%, UAS-B CPL-05 20%">📋 Contoh Kasus OBE (5 Butir)</button>
+              <button type="button" id="btnPresetMultiTask" class="btn btn-secondary btn-sm" title="2 Tugas, 2 Kuis, 2 UTS, 2 UAS">📋 Multiple Tugas/Kuis (8 Butir)</button>
+              <button type="button" id="btnPresetStandard4" class="btn btn-secondary btn-sm" title="1 Tugas, 1 Kuis, 1 UTS, 1 UAS">📋 Standar (4 Butir)</button>
+              <button type="button" id="btnAddItemRow" class="btn btn-primary btn-sm">➕ Tambah Butir</button>
+            </div>
+          </div>
+
+          <!-- Tabel Dinamis Butir Penilaian -->
+          <div class="table-responsive" style="max-height: 250px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 6px; background: #ffffff;">
+            <table style="font-size: 0.82rem; margin: 0;">
+              <thead style="position: sticky; top: 0; background: #f1f5f9; z-index: 2;">
+                <tr>
+                  <th style="min-width: 160px;">Nama Butir Penilaian</th>
+                  <th style="width: 105px;">Kategori</th>
+                  <th style="min-width: 160px;">Target CPL</th>
+                  <th style="width: 95px;">Bobot (%)</th>
+                  <th style="width: 95px;">Nilai (0-100)</th>
+                  <th style="width: 45px; text-align: center;">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="itemsTableBody">
+                <!-- Baris butir penilaian dinamis akan di-render di sini -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Total Bobot Komponen -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding: 4px 6px;">
+            <span style="font-size: 0.78rem; color: #64748b;">* Total bobot seluruh komponen penilaian harus tepat 100% untuk menghitung Nilai Akhir.</span>
+            <span id="totalWeightIndicator" style="font-size: 0.82rem; font-weight: 700; color: #16a34a;">Total Bobot Komponen: 100% ✅</span>
+          </div>
+        </div>
+
+        <!-- Tabel Rekapitulasi Bobot & Nilai per CPL (Ketentuan OBE) -->
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <strong style="font-size: 0.85rem; color: #166534;">🎯 PENGUKURAN KETERCAPAIAN CPL (OBE) — TARGET MINIMAL: 70.0</strong>
+            <span id="totalCplWeightBadge" style="font-size: 0.8rem; font-weight: 700; color: #15803d; background: #dcfce7; padding: 3px 8px; border-radius: 4px; border: 1px solid #86efac;">Total Bobot CPL: 100% ✅</span>
+          </div>
+          <div class="table-responsive" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px;">
+            <table style="font-size: 0.8rem; margin: 0;">
+              <thead>
+                <tr>
+                  <th style="width: 80px;">CPL</th>
+                  <th>Deskripsi Capaian</th>
+                  <th style="width: 170px;">Komponen Pengukur</th>
+                  <th style="width: 85px;">Bobot CPL</th>
+                  <th style="width: 85px;">Nilai CPL</th>
+                  <th style="width: 110px;">Status (≥70)</th>
+                </tr>
+              </thead>
+              <tbody id="previewCplTableBody">
+                <tr>
+                  <td colspan="6" style="text-align: center; color: #94a3b8; padding: 10px;">Pilih mata kuliah untuk melihat pemetaan CPL</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Box Perbandingan 2 Jenis Perhitungan (Akademik vs OBE) -->
+        <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <!-- A. Nilai Akhir Akademik -->
+            <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px 14px;">
+              <div style="font-size: 0.72rem; color: #1e40af; font-weight: 700;">A. PENILAIAN AKADEMIK MAHASISWA</div>
+              <div style="font-size: 0.72rem; color: #3b82f6; margin-top: 2px;">Σ (Nilai Komponen × Bobot Komponen)</div>
+              <div style="display: flex; align-items: baseline; gap: 10px; margin-top: 6px;">
+                <span style="font-size: 1.6rem; font-weight: 800; color: #1d4ed8;" id="previewScore">0.00</span>
+                <span style="font-size: 1.05rem; font-weight: 700; color: #1e293b;" id="previewLetter">E (Sangat Kurang)</span>
+              </div>
+            </div>
+
+            <!-- B. Pengukuran Ketercapaian CPL -->
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 10px 14px;">
+              <div style="font-size: 0.72rem; color: #166534; font-weight: 700;">B. PENGUKURAN KETERCAPAIAN CPL (OBE)</div>
+              <div style="font-size: 0.72rem; color: #15803d; margin-top: 2px;">(Jumlah CPL Tercapai / Total CPL) × 100%</div>
+              <div style="display: flex; align-items: baseline; gap: 10px; margin-top: 6px;">
+                <span style="font-size: 1.6rem; font-weight: 800; color: #15803d;" id="previewCplRate">0.0%</span>
+                <span style="font-size: 0.85rem; font-weight: 600; color: #166534;" id="previewCplCount">0 / 0 CPL</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer" style="margin-top: 14px;">
+          <button type="button" class="btn btn-secondary btn-close-modal">Batal</button>
+          <button type="submit" class="btn btn-primary">Simpan Penilaian OBE</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Detail Output Penilaian CPL Mahasiswa -->
+  <div id="cplDetailModal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 720px;">
+      <div class="modal-header">
+        <div>
+          <h3>🎯 Laporan Ketercapaian CPL Mahasiswa</h3>
+          <p id="cplDetailSubtitle" style="font-size: 0.85rem; color: #64748b; margin: 4px 0 0 0;">Output evaluasi pembelajaran berbasis Outcome-Based Education (OBE)</p>
+        </div>
+        <button class="btn-close btn-close-cpl-detail">&times;</button>
+      </div>
+
+      <div style="padding: 16px 20px;">
+        <!-- Header Info -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 14px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+          <div>
+            <div style="font-size: 0.72rem; color: #64748b; font-weight: 600;">MAHASISWA</div>
+            <strong id="detailStudentName" style="color: #0f172a; font-size: 0.95rem;">-</strong>
+          </div>
+          <div>
+            <div style="font-size: 0.72rem; color: #64748b; font-weight: 600;">MATA KULIAH</div>
+            <strong id="detailCourseName" style="color: #0f172a; font-size: 0.95rem;">-</strong>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 0.72rem; color: #64748b; font-weight: 600;">NILAI AKHIR & MUTU</div>
+            <strong id="detailFinalScore" style="color: #2563eb; font-size: 1.15rem;">-</strong>
+          </div>
+        </div>
+
+        <!-- Kartu Metrik OBE -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px 14px; border-radius: 6px;">
+            <div style="font-size: 0.75rem; color: #166534; font-weight: 600;">PERSENTASE KETERCAPAIAN CPL</div>
+            <div id="detailCplRate" style="font-size: 1.25rem; font-weight: 700; color: #15803d;">0.0%</div>
+            <div id="detailCplFraction" style="font-size: 0.75rem; color: #166534;">0 dari 0 CPL Tercapai</div>
+          </div>
+          <div id="detailCqiBox" style="background: #fef2f2; border: 1px solid #fecaca; padding: 10px 14px; border-radius: 6px;">
+            <div style="font-size: 0.75rem; color: #991b1b; font-weight: 600;">STATUS EVALUASI CPL (CQI)</div>
+            <div id="detailCqiStatus" style="font-size: 0.95rem; font-weight: 700; color: #b91c1c; margin-top: 4px;">-</div>
+          </div>
+        </div>
+
+        <!-- Tabel Rincian CPL -->
+        <div style="margin-bottom: 14px;">
+          <strong style="font-size: 0.82rem; color: #334155; margin-bottom: 6px; display: block;">🎯 Ketercapaian Tiap Capaian Pembelajaran Lulusan (CPL):</strong>
+          <div class="table-responsive" style="border: 1px solid #e2e8f0; border-radius: 6px;">
+            <table style="font-size: 0.85rem; margin: 0;">
+              <thead>
+                <tr>
+                  <th style="width: 80px;">CPL</th>
+                  <th>Deskripsi Capaian</th>
+                  <th style="width: 150px;">Komponen Pengukur</th>
+                  <th style="width: 80px;">Bobot CPL</th>
+                  <th style="width: 80px;">Nilai CPL</th>
+                  <th style="width: 110px;">Status (≥70)</th>
+                </tr>
+              </thead>
+              <tbody id="cplDetailTableBody">
+                <tr>
+                  <td colspan="6" style="text-align: center; color: var(--text-muted);">Memuat rincian CPL...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tabel Rincian Butir Penilaian Terperinci -->
+        <div id="detailItemsSection" style="display: none;">
+          <strong style="font-size: 0.82rem; color: #334155; margin-bottom: 6px; display: block;">📋 Rincian Butir Penilaian Terperinci (Multiple Tugas, Kuis, UTS, UAS):</strong>
+          <div class="table-responsive" style="border: 1px solid #e2e8f0; border-radius: 6px; max-height: 180px; overflow-y: auto;">
+            <table style="font-size: 0.82rem; margin: 0;">
+              <thead style="background: #f8fafc;">
+                <tr>
+                  <th style="width: 35px;">No</th>
+                  <th>Butir Penilaian</th>
+                  <th style="width: 85px;">Kategori</th>
+                  <th style="width: 90px;">Target CPL</th>
+                  <th style="width: 80px;">Bobot (%)</th>
+                  <th style="width: 80px;">Nilai</th>
+                </tr>
+              </thead>
+              <tbody id="detailItemsTableBody">
+                <tr>
+                  <td colspan="6" style="text-align: center; color: var(--text-muted);">Tidak ada rincian butir</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="padding: 12px 20px;">
+        <button type="button" class="btn btn-secondary btn-close-cpl-detail">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Rekapitulasi CPL Seluruh Kelas & Bahan Evaluasi (CQI) -->
+  <div id="classRecapModal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 960px;">
+      <div class="modal-header">
+        <div>
+          <h3>📊 Rekapitulasi Ketercapaian CPL Kelas</h3>
+          <p id="classRecapSubtitle" style="font-size: 0.85rem; color: #64748b; margin: 4px 0 0 0;">Evaluasi ketercapaian kompetensi tingkat kelas dan penjaminan mutu OBE program studi</p>
+        </div>
+        <button class="btn-close btn-close-class-recap">&times;</button>
+      </div>
+
+      <div style="padding: 16px 20px;">
+        <div class="form-group" style="max-width: 340px; margin-bottom: 14px;">
+          <label for="selectRecapCourse">Pilih Mata Kuliah</label>
+          <select id="selectRecapCourse" class="form-control"></select>
+        </div>
+
+        <div id="recapAlert" class="alert"></div>
+
+        <!-- 1. Matriks Ketercapaian CPL Mahasiswa Tingkat Kelas -->
+        <div style="margin-bottom: 18px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <strong style="color: #0f172a; font-size: 0.88rem;">1. 👥 Matriks Ketercapaian CPL Individual Seluruh Mahasiswa</strong>
+            <span style="font-size: 0.76rem; color: #64748b;">Standar Target Ketercapaian per CPL: ≥ 70.0</span>
+          </div>
+          <div class="table-responsive" style="border: 1px solid #e2e8f0; border-radius: 6px; max-height: 280px; overflow-y: auto;">
+            <table style="font-size: 0.82rem; margin: 0;" id="classMatrixTable">
+              <thead style="position: sticky; top: 0; background: #f1f5f9; z-index: 2;">
+                <tr id="classMatrixHeader">
+                  <th style="width: 35px;">No</th>
+                  <th>Mahasiswa</th>
+                  <th style="width: 85px;">NIM</th>
+                  <!-- Dynamic CPL headers will be injected here: CPL-02, CPL-03, CPL-04, CPL-05 -->
+                  <th style="width: 85px;">Nilai Akhir</th>
+                  <th style="width: 55px;">Mutu</th>
+                  <th style="width: 75px;">% CPL</th>
+                </tr>
+              </thead>
+              <tbody id="classMatrixBody">
+                <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 12px;">Pilih mata kuliah untuk melihat matriks kelas</td></tr>
+              </tbody>
+              <tfoot id="classMatrixFoot" style="position: sticky; bottom: 0; background: #f8fafc; font-weight: 700; border-top: 2px solid #cbd5e1;">
+                <!-- Rata-rata dan % kelulusan kelas per CPL will be injected here -->
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
+        <!-- 2. Ringkasan Ketercapaian CPL Program Studi & Mutu Pembelajaran -->
+        <div style="margin-bottom: 16px;">
+          <strong style="color: #0f172a; font-size: 0.88rem; display: block; margin-bottom: 8px;">2. 📊 Ringkasan Mutu & Evaluasi Ketercapaian CPL Program Studi</strong>
+          <div class="table-responsive" style="border: 1px solid #e2e8f0; border-radius: 6px;">
+            <table style="font-size: 0.85rem; margin: 0;">
+              <thead>
+                <tr>
+                  <th style="width: 80px;">Kode CPL</th>
+                  <th>Deskripsi Capaian</th>
+                  <th style="width: 85px;">Target</th>
+                  <th style="width: 85px;">Rata-rata</th>
+                  <th style="width: 110px;">Lulus / Total</th>
+                  <th style="width: 95px;">% Kelulusan</th>
+                  <th style="width: 130px;">Status Mutu</th>
+                </tr>
+              </thead>
+              <tbody id="classRecapTableBody">
+                <tr>
+                  <td colspan="7" style="text-align: center; color: var(--text-muted);">Pilih mata kuliah untuk melihat rekapitulasi</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 3. Box Identifikasi CPL yang Belum Tercapai (CQI) -->
+        <div id="cqiCard" style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 14px;">
+          <strong style="color: #92400e; font-size: 0.88rem;">3. 📌 Identifikasi Evaluasi Pembelajaran & CQI (Continuous Quality Improvement):</strong>
+          <div id="cqiList" style="margin-top: 6px; font-size: 0.85rem; color: #78350f;">
+            Tidak ada temuan CPL kritis. Seluruh capaian pembelajaran lulusan memenuhi standar target mutu.
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="padding: 12px 20px;">
+        <button type="button" class="btn btn-secondary btn-close-class-recap">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Konfirmasi Simulasi 5 Mahasiswa OBE -->
+  <div id="simulationModal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 560px;">
+      <div class="modal-header">
+        <h3>✨ Simulasi 5 Kasus Mahasiswa OBE</h3>
+        <button class="btn-close btn-close-sim-modal">&times;</button>
+      </div>
+      <div style="padding: 10px 4px;">
+        <p style="font-size: 0.9rem; color: #334155;">
+          Fitur ini akan secara otomatis membuat <strong>5 data mahasiswa</strong> dengan variasi kasus realistis persis sesuai spesifikasi OBE:
+        </p>
+        <ul style="font-size: 0.83rem; color: #475569; padding-left: 20px; line-height: 1.6;">
+          <li><strong>Mhs 1 (Ahmad Fauzan):</strong> 100% CPL Tercapai (CPL-02: 80, CPL-03: 85, CPL-04: 77.5, CPL-05: 90) — Nilai Akhir: 81.75 (AB)</li>
+          <li><strong>Mhs 2 (Budi Pratama):</strong> 75% CPL Tercapai (CPL-03 Belum Tercapai: 65 &lt; 70) — Nilai Akhir: 77.25 (B)</li>
+          <li><strong>Mhs 3 (Citra Lestari):</strong> 100% CPL Tercapai (Penguasaan CPL-02: 90) — Nilai Akhir: 82.75 (AB)</li>
+          <li><strong>Mhs 4 (Doni Saputra):</strong> 50% CPL Tercapai (CPL-02: 60 &amp; CPL-04: 65 Belum Tercapai) — Nilai Akhir: 69.25 (C)</li>
+          <li><strong>Mhs 5 (Eka Rahmawati):</strong> 100% CPL Tercapai (Prestasi Unggul Seluruh CPL) — Nilai Akhir: 90.25 (A)</li>
+        </ul>
+        <div style="font-size: 0.8rem; color: #166534; background: #f0fdf4; padding: 8px 12px; border-radius: 6px; border: 1px solid #bbf7d0; margin-top: 10px;">
+          Rata-rata Kelas yang Dihasilkan: CPL-02: 78.0 (80%), CPL-03: 79.0 (80%), CPL-04: 79.5 (80%), CPL-05: 85.0 (100%).
+        </div>
+
+        <div class="form-group" style="margin-top: 14px;">
+          <label for="selectSimCourse">Pilih Mata Kuliah untuk Simulasi:</label>
+          <select id="selectSimCourse" class="form-control" required></select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-close-sim-modal">Batal</button>
+        <button type="button" id="btnExecuteSimulation" class="btn btn-primary">Jalankan Simulasi Sekarang</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Kelola Butir Penilaian Dinamis (In-Place di Halaman Grades) -->
+  <div id="manageAssessmentItemsModal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 900px;">
+      <div class="modal-header">
+        <div>
+          <h3>⚙️ Pengaturan Dinamis Butir Penilaian Mata Kuliah</h3>
+          <p id="manageItemsSubtitle" style="font-size: 0.85rem; color: #64748b; margin: 4px 0 0 0;">
+            Tambah, ubah, atau hapus butir penilaian secara on-the-fly. Perubahan akan langsung diaplikasikan ke kolom spreadsheet matriks penilaian serentak.
+          </p>
+        </div>
+        <button class="btn-close btn-close-manage-items">&times;</button>
+      </div>
+
+      <div style="padding: 10px 4px;">
+        <div id="modalManageAlert" class="alert"></div>
+
+        <!-- Toolbar Atas Modal: Tambah Butir & Preset Template -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <div>
+            <strong id="modalManageCourseName" style="color: #0f172a; font-size: 0.92rem;">Mata Kuliah: -</strong>
+          </div>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button type="button" id="btnModalBalanceWeights" class="btn btn-secondary btn-sm" title="Otomatis bagi rata 100% ke seluruh butir yang ada">
+              ⚖️ Bagi Rata Bobot (100%)
+            </button>
+            <button type="button" id="btnModalPresetUser" class="btn btn-secondary btn-sm" title="Kasus OBE 5 butir">
+              📋 Kasus OBE (5 Butir)
+            </button>
+            <button type="button" id="btnModalPresetMulti" class="btn btn-secondary btn-sm" title="Multi Tugas & Kuis 8 butir">
+              📋 Multi Tugas (8 Butir)
+            </button>
+            <button type="button" id="btnModalPresetStd" class="btn btn-secondary btn-sm" title="Standar 4 butir">
+              📋 Standar (4 Butir)
+            </button>
+            <button type="button" id="btnModalAddItem" class="btn btn-primary btn-sm">
+              ➕ Tambah Butir
+            </button>
+          </div>
+        </div>
+
+        <!-- Tabel Butir Penilaian Dinamis -->
+        <div class="table-responsive" style="border: 1px solid #cbd5e1; border-radius: 6px; max-height: 320px; overflow-y: auto; background: #ffffff;">
+          <table style="font-size: 0.84rem; margin: 0;">
+            <thead style="position: sticky; top: 0; background: #f1f5f9; z-index: 2;">
+              <tr>
+                <th style="width: 35px; text-align: center;">No</th>
+                <th style="min-width: 170px;">Nama Butir Penilaian</th>
+                <th style="width: 120px;">Kategori</th>
+                <th style="min-width: 180px;">Target CPL</th>
+                <th style="width: 110px; text-align: center;">Bobot (%)</th>
+                <th style="width: 50px; text-align: center;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="modalItemsTableBody">
+              <tr>
+                <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 16px;">Memuat butir penilaian...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Indikator Total Bobot -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding: 8px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;">
+          <span style="font-size: 0.8rem; color: #64748b;">
+            * Total seluruh bobot butir harus tepat <strong>100%</strong>. Gunakan tombol <em>⚖️ Bagi Rata Bobot</em> untuk otomatis menyeimbangkan.
+          </span>
+          <span id="modalTotalWeightBadge" style="font-size: 0.85rem; font-weight: 700; color: #15803d; background: #dcfce7; padding: 4px 10px; border-radius: 4px; border: 1px solid #86efac;">
+            Total Bobot: 100% ✅
+          </span>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="margin-top: 14px;">
+        <button type="button" class="btn btn-secondary btn-close-manage-items">Batal</button>
+        <button type="button" id="btnSaveModalAssessmentItems" class="btn btn-primary" style="font-weight: 700; padding: 9px 20px;">
+          💾 Simpan & Terapkan ke Lembar Matriks
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/main.js"></script>
+  <script src="/static/js/grades.js"></script>
+</body>
+</html>

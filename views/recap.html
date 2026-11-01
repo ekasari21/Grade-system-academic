@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Rekapan Nilai & CPL — Student Grade Calculator</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>📊 GradeCalc</h2>
+      </div>
+      <ul class="sidebar-menu">
+        <li><a href="/"><span>🏠</span> Dashboard</a></li>
+        <li><a href="/recap" class="active"><span>📊</span> Rekap Nilai & CPL</a></li>
+        <li><a href="/public"><span>🌐</span> Portal Publik (NIM)</a></li>
+        <li><a href="/grades"><span>📝</span> Hasil & Input Nilai</a></li>
+        <li><a href="/students"><span>👨‍🎓</span> Data Mahasiswa</a></li>
+        <li><a href="/courses"><span>📚</span> Data Mata Kuliah</a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <div class="user-profile">
+          <span id="sidebarUserName" class="user-name">Memuat...</span>
+          <span id="sidebarUserRole" class="user-role">-</span>
+        </div>
+        <button class="btn-logout" onclick="handleLogout()">🚪 Keluar</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Top Bar -->
+      <header class="top-bar">
+        <div>
+          <h1>📊 Rekapitulasi Hasil Penilaian & Analisis CPL OBE</h1>
+          <p style="font-size: 0.85rem; color: #64748b; margin: 4px 0 0 0;">
+            Laporan komprehensif performa akademik, ketercapaian kompetensi lulusan, dan analisis penjaminan mutu kurikulum OBE.
+          </p>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button id="btnRecapSimulate" class="btn btn-secondary dosen-admin-only" title="Muat simulasi 5 mahasiswa dengan kasus uji OBE">
+            ✨ Simulasi 5 Mahasiswa OBE
+          </button>
+          <a href="/grades" class="btn btn-info dosen-admin-only" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+            📝 Input Nilai Serentak
+          </a>
+          <button id="btnExportCSV" class="btn btn-success" title="Unduh rekapitulasi lengkap dalam format CSV/Excel">
+            📥 Unduh Excel / CSV
+          </button>
+          <button id="btnPrintReport" class="btn btn-primary" title="Cetak atau simpan sebagai dokumen PDF resmi">
+            🖨️ Cetak Laporan (PDF)
+          </button>
+        </div>
+      </header>
+
+      <div class="content-body">
+        <div id="recapAlert" class="alert"></div>
+
+        <!-- Printable Header (Hanya muncul saat print) -->
+        <div class="print-only print-header">
+          <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 20px;">
+            <h2 style="margin: 0; font-size: 1.4rem; text-transform: uppercase; letter-spacing: 0.5px;">LAPORAN REKAPITULASI HASIL PENILAIAN MAHASISWA</h2>
+            <h3 style="margin: 4px 0; font-size: 1.1rem; color: #334155;">BERBASIS OUTCOME-BASED EDUCATION (OBE) & KETERCAPAIAN CPL</h3>
+            <p style="margin: 0; font-size: 0.85rem; color: #64748b;" id="printMetaDate">Dicetak pada: -</p>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 16px; font-size: 0.9rem;">
+            <div>
+              <strong>Mata Kuliah:</strong> <span id="printCourseName">-</span><br>
+              <strong>Kode / SKS:</strong> <span id="printCourseCode">-</span> (<span id="printCourseCredits">-</span> SKS)
+            </div>
+            <div style="text-align: right;">
+              <strong>Standar Kelulusan CPL:</strong> Nilai &ge; 70.00<br>
+              <strong>Kaidah Bobot Komponen:</strong> 100% (Akumulatif)
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter & Info Toolbar -->
+        <div class="card no-print" style="margin-bottom: 20px; padding: 16px 20px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <label for="recapCourseSelect" style="font-weight: 700; font-size: 0.9rem; color: #1e293b; white-space: nowrap;">
+                Pilih Mata Kuliah:
+              </label>
+              <select id="recapCourseSelect" class="form-control" style="min-width: 320px; font-weight: 600; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                <option value="">Memuat daftar mata kuliah...</option>
+              </select>
+              <button id="btnRecapRefresh" class="btn btn-secondary btn-sm" title="Perbarui data terbaru">
+                🔄 Segarkan
+              </button>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <span id="recapCourseBadge" class="badge-cpl" style="font-size: 0.85rem; padding: 6px 12px;">
+                Kode: -
+              </span>
+              <span class="badge-cpl-success" style="font-size: 0.85rem; padding: 6px 12px;">
+                🎯 Target Standar CPL: &ge; 70.00
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top Metric Cards (Executive KPI Grid) -->
+        <div class="recap-stats-grid">
+          <!-- Card 1: Total Mahasiswa Dinilai -->
+          <div class="recap-stat-card card-gradient-blue">
+            <div class="recap-card-content">
+              <span class="recap-stat-label">TOTAL MAHASISWA DINILAI</span>
+              <div class="recap-stat-number" id="kpiTotalStudents">0</div>
+              <div class="recap-stat-sub" id="kpiStudentsSub">Status Nilai Lengkap</div>
+            </div>
+            <div class="recap-card-icon">👨‍🎓</div>
+          </div>
+
+          <!-- Card 2: Rata-Rata Nilai Akhir Kelas -->
+          <div class="recap-stat-card card-gradient-emerald">
+            <div class="recap-card-content">
+              <span class="recap-stat-label">RATA-RATA NILAI AKHIR</span>
+              <div class="recap-stat-number" id="kpiAverageScore">0.00</div>
+              <div class="recap-stat-sub">
+                <span id="kpiAverageGradeBadge" class="badge-grade badge-A" style="font-size: 0.75rem; padding: 2px 6px;">-</span>
+                <span id="kpiAcademicPassRate" style="margin-left: 4px;">Kelulusan: 0%</span>
+              </div>
+            </div>
+            <div class="recap-card-icon">📈</div>
+          </div>
+
+          <!-- Card 3: Ketercapaian CPL Kelas -->
+          <div class="recap-stat-card card-gradient-cyan">
+            <div class="recap-card-content">
+              <span class="recap-stat-label">KETERCAPAIAN CPL KELAS</span>
+              <div class="recap-stat-number" id="kpiCPLPassRate">0.0%</div>
+              <div class="recap-stat-sub" id="kpiCPLCounts">0 dari 0 Evaluasi Lulus (&ge;70)</div>
+            </div>
+            <div class="recap-card-icon">🎯</div>
+          </div>
+
+          <!-- Card 4: Performa Tertinggi & Terendah -->
+          <div class="recap-stat-card card-gradient-purple">
+            <div class="recap-card-content">
+              <span class="recap-stat-label">SEBARAN PERFORMA KELAS</span>
+              <div style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin-top: 4px;" id="kpiHighestStudent">
+                Tertinggi: -
+              </div>
+              <div style="font-size: 0.85rem; color: #64748b; margin-top: 2px;" id="kpiLowestStudent">
+                Terendah: -
+              </div>
+            </div>
+            <div class="recap-card-icon">🏆</div>
+          </div>
+        </div>
+
+        <!-- Visual Analytics Section (Charts) -->
+        <div class="recap-charts-grid no-print">
+          <!-- Chart 1: Bar Chart Ketercapaian per CPL vs Target 70 -->
+          <div class="card chart-box" style="flex: 2; min-width: 320px;">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+              <h3 class="card-title">📊 Rata-Rata Nilai per CPL vs Target Standar (70.00)</h3>
+              <span class="badge-cpl" style="font-size: 0.78rem;">Evaluasi OBE</span>
+            </div>
+            <div style="height: 260px; position: relative;">
+              <canvas id="chartCPLScores"></canvas>
+            </div>
+            <p style="font-size: 0.8rem; color: #64748b; margin-top: 10px; text-align: center;">
+              Garis putus-putus merah menandai batas minimal ketercapaian kompetensi (<strong>70.00</strong>). Batang hijau = Tercapai, Batang merah = Belum Tercapai.
+            </p>
+          </div>
+
+          <!-- Chart 2: Doughnut Chart Distribusi Nilai Huruf -->
+          <div class="card chart-box" style="flex: 1; min-width: 260px;">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+              <h3 class="card-title">🍩 Distribusi Nilai Huruf</h3>
+              <span class="badge-cpl" style="font-size: 0.78rem;">Grade Mutu</span>
+            </div>
+            <div style="height: 260px; position: relative; display: flex; align-items: center; justify-content: center;">
+              <canvas id="chartGradeDist"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 3: Radar Chart Profil Kompetensi Lulusan -->
+          <div class="card chart-box" style="flex: 1; min-width: 260px;">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+              <h3 class="card-title">🕸️ Radar Profil CPL</h3>
+              <span class="badge-cpl" style="font-size: 0.78rem;">Pemetaan</span>
+            </div>
+            <div style="height: 260px; position: relative; display: flex; align-items: center; justify-content: center;">
+              <canvas id="chartCPLRadar"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabel Matriks Lengkap Rekap Nilai Mahasiswa vs CPL -->
+        <div class="card" style="margin-top: 20px;">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <h3 class="card-title">📋 Matriks Lengkap Rekap Nilai Mahasiswa & Penguasaan CPL</h3>
+              <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 3px;">
+                Memuat nilai butir evaluasi, nilai masing-masing CPL, persentase ketercapaian kompetensi, dan nilai akhir mahasiswa.
+              </p>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;" class="no-print">
+              <!-- Filter Pencarian Nama / NIM -->
+              <input type="text" id="matrixSearchInput" class="form-control" placeholder="🔍 Cari Nama / NIM..." style="width: 200px; font-size: 0.85rem; padding: 6px 10px;">
+
+              <!-- Filter Ketercapaian -->
+              <select id="matrixFilterStatus" class="form-control" style="width: 170px; font-size: 0.85rem; padding: 6px 10px;">
+                <option value="all">Semua Mahasiswa</option>
+                <option value="pass_all">Lulus CPL 100%</option>
+                <option value="has_fail">Ada CPL &lt; 70</option>
+              </select>
+
+              <!-- Checkbox Tampilkan Detail Butir -->
+              <label style="font-size: 0.85rem; color: #334155; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; user-select: none;">
+                <input type="checkbox" id="chkShowComponents" checked>
+                Tampilkan Kolom Butir
+              </label>
+            </div>
+          </div>
+
+          <!-- Tabel Matriks Responsif -->
+          <div class="table-responsive" style="border: 1px solid #cbd5e1; border-radius: 8px; overflow-x: auto; background: #ffffff;">
+            <table id="recapMatrixTable" class="table-recap-matrix" style="margin: 0; font-size: 0.85rem; width: 100%; border-collapse: collapse;">
+              <thead id="recapMatrixHead" style="background: #0f172a; color: #ffffff;">
+                <!-- Dinamis di-generate oleh JS -->
+                <tr>
+                  <th style="padding: 10px; text-align: center;">No</th>
+                  <th style="padding: 10px; text-align: left;">NIM</th>
+                  <th style="padding: 10px; text-align: left;">Nama Mahasiswa</th>
+                  <th style="padding: 10px; text-align: center;">Memuat matriks...</th>
+                </tr>
+              </thead>
+              <tbody id="recapMatrixBody">
+                <tr>
+                  <td colspan="10" style="text-align: center; color: var(--text-muted); padding: 20px;">
+                    Memuat data rekapitulasi penilaian...
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot id="recapMatrixFoot" style="background: #f8fafc; font-weight: 700; border-top: 2px solid #94a3b8;">
+                <!-- Dinamis di-generate oleh JS -->
+              </tfoot>
+            </table>
+          </div>
+
+          <!-- Keterangan Legend Matriks -->
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 12px; font-size: 0.8rem; color: #64748b;">
+            <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+              <span><span style="display: inline-block; width: 12px; height: 12px; background: #dcfce7; border: 1px solid #86efac; border-radius: 3px; vertical-align: middle;"></span> CPL &ge; 70 (Tercapai / Lulus)</span>
+              <span><span style="display: inline-block; width: 12px; height: 12px; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 3px; vertical-align: middle;"></span> CPL &lt; 70 (Belum Tercapai)</span>
+              <span>* Nilai Akhir dihitung dari akumulasi <code>&Sigma; (Nilai Butir &times; Bobot Butir)</code></span>
+            </div>
+            <div id="matrixShowingCount">
+              Menampilkan 0 mahasiswa
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabel Rekapitulasi Ketercapaian Mutu per CPL & Rekomendasi CQI -->
+        <div class="card" style="margin-top: 20px; border-left: 4px solid #0284c7;">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h3 class="card-title">🎯 Evaluasi Penjaminan Mutu CPL & Tindak Lanjut (CQI)</h3>
+              <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 3px;">
+                Analisis Continuous Quality Improvement untuk akreditasi program studi. Standar target kelulusan kelas: minimal <strong>75%</strong> mahasiswa mencapai CPL &ge; 70.
+              </p>
+            </div>
+            <span class="badge-cpl" style="font-size: 0.85rem;">Standar Mutu OBE</span>
+          </div>
+
+          <!-- Tabel Evaluasi CPL -->
+          <div class="table-responsive" style="margin-bottom: 16px;">
+            <table class="table-recap-cqi" style="width: 100%; font-size: 0.85rem;">
+              <thead style="background: #f1f5f9; color: #1e293b;">
+                <tr>
+                  <th style="width: 110px;">Kode CPL</th>
+                  <th>Deskripsi Capaian Pembelajaran</th>
+                  <th style="width: 100px; text-align: center;">Target Min</th>
+                  <th style="width: 110px; text-align: center;">Rata-Rata Kelas</th>
+                  <th style="width: 120px; text-align: center;">Lulus / Total</th>
+                  <th style="width: 110px; text-align: center;">% Kelulusan</th>
+                  <th style="width: 180px; text-align: center;">Status Mutu</th>
+                </tr>
+              </thead>
+              <tbody id="cqiTableBody">
+                <tr>
+                  <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 16px;">
+                    Memuat data evaluasi mutu CPL...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Box Rekomendasi CQI & Mahasiswa Remedial -->
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px;">
+            <h4 style="font-size: 0.95rem; font-weight: 700; color: #1e293b; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+              <span>📝</span> Temuan Evaluasi & Rekomendasi Tindak Lanjut Pembelajaran:
+            </h4>
+            <div id="cqiRecommendationsList" style="font-size: 0.88rem; color: #334155; line-height: 1.6;">
+              <p style="color: #64748b; margin: 0;">Belum ada data penilaian untuk dianalisis.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section Tanda Tangan Cetak (Hanya tampil saat print) -->
+        <div class="print-only print-signatures" style="margin-top: 40px; display: flex; justify-content: space-between; page-break-inside: avoid;">
+          <div style="text-align: center; width: 220px;">
+            <p style="margin: 0 0 60px 0; font-size: 0.88rem;">Mengetahui,<br><strong>Ketua Program Studi</strong></p>
+            <p style="margin: 0; font-weight: 700; text-decoration: underline;">(_________________________)</p>
+            <p style="margin: 0; font-size: 0.8rem; color: #64748b;">NIP. ........................................</p>
+          </div>
+          <div style="text-align: center; width: 220px;">
+            <p style="margin: 0 0 60px 0; font-size: 0.88rem;" id="printSignDate">Semarang, -<br><strong>Dosen Pengampu</strong></p>
+            <p style="margin: 0; font-weight: 700; text-decoration: underline;" id="printLecturerName">(_________________________)</p>
+            <p style="margin: 0; font-size: 0.8rem; color: #64748b;">NIDN. ........................................</p>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/js/main.js"></script>
+  <script src="/static/js/recap.js"></script>
+</body>
+</html>

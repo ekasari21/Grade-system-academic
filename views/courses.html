@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Mata Kuliah — Student Grade Calculator</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>📊 GradeCalc</h2>
+      </div>
+      <ul class="sidebar-menu">
+        <li><a href="/"><span>🏠</span> Dashboard</a></li>
+        <li><a href="/recap"><span>📊</span> Rekap Nilai & CPL</a></li>
+        <li><a href="/public"><span>🌐</span> Portal Publik (NIM)</a></li>
+        <li><a href="/grades"><span>📝</span> Hasil & Input Nilai</a></li>
+        <li><a href="/students"><span>👨‍🎓</span> Data Mahasiswa</a></li>
+        <li><a href="/courses" class="active"><span>📚</span> Data Mata Kuliah</a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <div class="user-profile">
+          <span id="sidebarUserName" class="user-name">Memuat...</span>
+          <span id="sidebarUserRole" class="user-role">-</span>
+        </div>
+        <button class="btn-logout" onclick="handleLogout()">🚪 Keluar</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <header class="top-bar">
+        <h1>Data Mata Kuliah</h1>
+        <button id="btnOpenAddCourse" class="btn btn-primary dosen-admin-only">➕ Tambah Mata Kuliah</button>
+      </header>
+
+      <div class="content-body">
+        <div id="courseAlert" class="alert"></div>
+
+        <div class="card">
+          <!-- Tabel Data Mata Kuliah -->
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 60px;">No</th>
+                  <th>Kode MK</th>
+                  <th>Nama Mata Kuliah</th>
+                  <th>Bobot SKS</th>
+                  <th>Capaian (CPL)</th>
+                  <th class="dosen-admin-only" style="width: 220px;">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="courseTableBody">
+                <tr>
+                  <td colspan="6" style="text-align: center; color: var(--text-muted);">Memuat data mata kuliah...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal Tambah / Edit Mata Kuliah -->
+  <div id="courseModal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="courseModalTitle">Tambah Mata Kuliah Baru</h3>
+        <button class="btn-close btn-close-modal">&times;</button>
+      </div>
+      <form id="courseForm">
+        <input type="hidden" id="courseId">
+        <div class="form-group">
+          <label for="inputCode">Kode Mata Kuliah</label>
+          <input type="text" id="inputCode" class="form-control" placeholder="Contoh: IF101" required>
+        </div>
+        <div class="form-group">
+          <label for="inputCourseName">Nama Mata Kuliah</label>
+          <input type="text" id="inputCourseName" class="form-control" placeholder="Contoh: Algoritma & Pemrograman" required>
+        </div>
+        <div class="form-group">
+          <label for="inputCredits">Bobot SKS (1 s.d. 6)</label>
+          <input type="number" id="inputCredits" class="form-control" min="1" max="6" value="3" required>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-close-modal">Batal</button>
+          <button type="submit" class="btn btn-primary">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Kelola CPL Mata Kuliah -->
+  <div id="cplModal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 720px;">
+      <div class="modal-header">
+        <div>
+          <h3 id="cplModalTitle">🎯 Kelola CPL Mata Kuliah</h3>
+          <p id="cplModalSubtitle" style="font-size: 0.85rem; color: #64748b; margin: 4px 0 0 0;">Daftar Capaian Pembelajaran Lulusan untuk mata kuliah ini</p>
+        </div>
+        <button class="btn-close btn-close-cpl-modal">&times;</button>
+      </div>
+
+      <div style="padding: 16px 20px;">
+        <div id="cplModalAlert" class="alert"></div>
+
+        <!-- Tabel CPL Terdaftar -->
+        <div style="margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <strong style="font-size: 0.95rem; color: #1e293b;">Daftar CPL Terdaftar</strong>
+            <button id="btnGenerateDefaultCPL" class="btn btn-secondary btn-sm dosen-admin-only">✨ Buat CPL Standar Otomatis</button>
+          </div>
+
+          <div class="table-responsive" style="max-height: 240px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px;">
+            <table style="font-size: 0.88rem; margin: 0;">
+              <thead>
+                <tr>
+                  <th style="width: 90px;">Kode CPL</th>
+                  <th>Deskripsi Capaian</th>
+                  <th style="width: 110px;">Standar Lulus</th>
+                  <th class="dosen-admin-only" style="width: 70px;">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="cplTableBody">
+                <tr>
+                  <td colspan="4" style="text-align: center; color: var(--text-muted);">Memuat data CPL...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Form Tambah CPL Baru -->
+        <div class="card dosen-admin-only" style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 14px; border-radius: 8px; margin: 0;">
+          <h4 style="margin: 0 0 10px 0; font-size: 0.9rem; color: #334155;">➕ Tambah CPL Baru</h4>
+          <form id="addCplForm">
+            <input type="hidden" id="cplCourseId">
+            <div style="display: grid; grid-template-columns: 130px 1fr 120px 90px; gap: 10px; align-items: flex-end;">
+              <div class="form-group" style="margin: 0;">
+                <label for="inputCplCode" style="font-size: 0.78rem;">Kode CPL</label>
+                <input type="text" id="inputCplCode" class="form-control" placeholder="CPL-1" required>
+              </div>
+              <div class="form-group" style="margin: 0;">
+                <label for="inputCplDesc" style="font-size: 0.78rem;">Deskripsi Capaian</label>
+                <input type="text" id="inputCplDesc" class="form-control" placeholder="Contoh: Penguasaan konsep..." required>
+              </div>
+              <div class="form-group" style="margin: 0;">
+                <label for="inputCplTarget" style="font-size: 0.78rem;">Standar OBE (≥70)</label>
+                <input type="number" step="0.5" id="inputCplTarget" class="form-control" min="0" max="100" value="70" required>
+              </div>
+              <div>
+                <button type="submit" class="btn btn-primary btn-sm" style="height: 38px; width: 100%;">Tambah</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="padding: 12px 20px;">
+        <button type="button" class="btn btn-secondary btn-close-cpl-modal">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/main.js"></script>
+  <script src="/static/js/courses.js"></script>
+</body>
+</html>

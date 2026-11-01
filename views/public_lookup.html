@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal Publik Pencarian Nilai & CPL — Student Grade Calculator</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body style="background-color: #f8fafc; color: #1e293b;">
+
+  <!-- Public Top Navigation -->
+  <header class="public-navbar no-print">
+    <div class="public-nav-container">
+      <div class="public-nav-brand">
+        <a href="/public" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 1.5rem;">📊</span>
+          <div>
+            <div style="font-weight: 800; font-size: 1.15rem; color: #0284c7; letter-spacing: -0.5px;">GradeCalc OBE</div>
+            <div style="font-size: 0.72rem; color: #64748b; font-weight: 600;">PORTAL PUBLIK HASIL BELAJAR & CPL</div>
+          </div>
+        </a>
+      </div>
+      <div class="public-nav-links">
+        <a href="/public" class="public-nav-link active">🔍 Cek Nilai Mahasiswa</a>
+        <a href="/recap" class="public-nav-link">📈 Rekapitulasi Kelas</a>
+        <a href="/login" class="btn btn-primary btn-sm" style="font-weight: 600; text-decoration: none; padding: 7px 16px;">
+          🔐 Masuk Sistem
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="public-main-content">
+    
+    <!-- Hero Search Section (No-Print) -->
+    <section class="public-hero-card no-print">
+      <div class="hero-content">
+        <span class="hero-badge">PENCARIAN NILAI MAHASISWA & KOMPETENSI OBE</span>
+        <h1 class="hero-title">Cek Hasil Belajar & Ketercapaian CPL</h1>
+        <p class="hero-subtitle">
+          Masukkan <strong>Nomor Induk Mahasiswa (NIM)</strong> untuk melihat transkrip nilai akademik, rincian komponen evaluasi (Tugas, Kuis, UTS, UAS), serta grafik profil penguasaan Capaian Pembelajaran Lulusan (CPL) berbasis standar Outcome-Based Education.
+        </p>
+
+        <!-- Form Pencarian NIM -->
+        <form id="publicSearchForm" class="search-form-wrapper" onsubmit="return false;">
+          <div class="search-input-box">
+            <span class="search-icon">👨‍🎓</span>
+            <input type="text" id="inputSearchNIM" class="search-input-field" placeholder="Ketik NIM mahasiswa (misal: 240101, 240102)..." autocomplete="off" autofocus>
+            <button type="button" id="btnClearSearch" class="btn-clear-search" style="display: none;" title="Hapus teks">✕</button>
+          </div>
+          <button type="submit" id="btnSubmitSearch" class="btn-search-action">
+            <span>🔍</span> Cari Nilai
+          </button>
+        </form>
+
+        <!-- Chip Sampel NIM -->
+        <div class="sample-nims-wrapper">
+          <span style="font-size: 0.8rem; color: #94a3b8; font-weight: 600;">💡 Coba NIM Sampel:</span>
+          <div id="sampleNIMChips" class="sample-chips-list">
+            <span style="font-size: 0.8rem; color: #cbd5e1;">Memuat data mahasiswa...</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Alert Notifikasi -->
+    <div id="publicAlert" class="alert no-print" style="max-width: 1100px; margin: 0 auto 20px auto;"></div>
+
+    <!-- State 1: Placeholder Sebelum Pencarian (No-Print) -->
+    <div id="stateInitial" class="public-state-box no-print">
+      <div style="font-size: 3rem; margin-bottom: 12px;">📚</div>
+      <h3 style="font-size: 1.25rem; font-weight: 700; color: #1e293b; margin-bottom: 8px;">Silakan Masukkan NIM Mahasiswa</h3>
+      <p style="font-size: 0.9rem; color: #64748b; max-width: 550px; margin: 0 auto 20px auto; line-height: 1.5;">
+        Hasil pencarian akan menampilkan rekapitulasi nilai akademik, grafik radar kompetensi CPL, distribusi nilai huruf, serta rincian penilaian per mata kuliah.
+      </p>
+      <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+        <div class="feature-pill">🎯 Pengukuran CPL (Target &ge; 70)</div>
+        <div class="feature-pill">📊 Grafik Radar Kompetensi</div>
+        <div class="feature-pill">📝 Transparan & Akuntabel</div>
+      </div>
+    </div>
+
+    <!-- State 2: Loading State (No-Print) -->
+    <div id="stateLoading" class="public-state-box no-print" style="display: none;">
+      <div class="spinner-pulse" style="font-size: 2.5rem; margin-bottom: 14px;">⏳</div>
+      <h3 style="font-size: 1.2rem; font-weight: 700; color: #0284c7;">Sedang Memuat Data Hasil Belajar...</h3>
+      <p style="font-size: 0.88rem; color: #64748b; margin-top: 4px;">Menganalisis penilaian komponen akademik dan pemetaan CPL.</p>
+    </div>
+
+    <!-- State 3: Hasil Pencarian Mahasiswa (Muncul Setelah Dicari) -->
+    <div id="stateResults" style="display: none; max-width: 1140px; margin: 0 auto 40px auto; padding: 0 16px;">
+      
+      <!-- Printable Official Header (Hanya saat cetak) -->
+      <div class="print-only print-header">
+        <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 20px;">
+          <h2 style="margin: 0; font-size: 1.35rem; text-transform: uppercase;">KARTU HASIL STUDI & KETERCAPAIAN CAPAIAN PEMBELAJARAN LULUSAN (KHS-OBE)</h2>
+          <h3 style="margin: 4px 0; font-size: 1rem; color: #475569;">KURIKULUM BERBASIS OUTCOME-BASED EDUCATION (OBE)</h3>
+          <p style="margin: 0; font-size: 0.8rem; color: #64748b;" id="printReportDate">Tanggal Cetak: -</p>
+        </div>
+      </div>
+
+      <!-- Kartu Profil Mahasiswa -->
+      <div class="card student-profile-card">
+        <div class="profile-main-info">
+          <div class="profile-avatar">👨‍🎓</div>
+          <div class="profile-text">
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <h2 id="resStudentName" style="margin: 0; font-size: 1.45rem; font-weight: 800; color: #0f172a;">Nama Mahasiswa</h2>
+              <span id="resCurriculumBadge" class="badge-cpl-success" style="font-size: 0.78rem; padding: 4px 10px;">Kurikulum OBE</span>
+            </div>
+            <div class="profile-meta-row">
+              <span><strong>NIM:</strong> <span id="resStudentNIM" style="font-weight: 700; color: #0284c7;">-</span></span>
+              <span>•</span>
+              <span><strong>Program Studi:</strong> <span id="resStudentMajor">-</span></span>
+              <span>•</span>
+              <span><strong>Status:</strong> <span class="badge-grade badge-A" style="font-size: 0.75rem; padding: 2px 8px;">Aktif</span></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="profile-actions no-print">
+          <button id="btnPrintStudentReport" class="btn btn-primary" title="Cetak KHS & Transkrip CPL resmi">
+            🖨️ Cetak KHS / PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI Ringkasan Performa Mahasiswa -->
+      <div class="recap-stats-grid" style="margin-top: 16px;">
+        <!-- Card 1: IPK Mahasiswa -->
+        <div class="recap-stat-card card-gradient-blue">
+          <div class="recap-card-content">
+            <span class="recap-stat-label">INDEKS PRESTASI KUMULATIF (IPK)</span>
+            <div class="recap-stat-number" id="resKPIIPK">0.00</div>
+            <div class="recap-stat-sub">
+              <span id="resKPIPredicateBadge" class="badge-grade badge-A" style="font-size: 0.75rem; padding: 2px 6px;">-</span>
+              <span id="resKPIPredicateText" style="margin-left: 6px; font-weight: 600; color: #1e40af;">-</span>
+            </div>
+          </div>
+          <div class="recap-card-icon">🎓</div>
+        </div>
+
+        <!-- Card 2: Rata-Rata Nilai Akhir -->
+        <div class="recap-stat-card card-gradient-emerald">
+          <div class="recap-card-content">
+            <span class="recap-stat-label">RATA-RATA NILAI AKHIR</span>
+            <div class="recap-stat-number" id="resKPIAvgScore">0.00</div>
+            <div class="recap-stat-sub" id="resKPICoursesAndCredits">0 Mata Kuliah (0 SKS)</div>
+          </div>
+          <div class="recap-card-icon">📈</div>
+        </div>
+
+        <!-- Card 3: Ketercapaian CPL Mahasiswa -->
+        <div class="recap-stat-card card-gradient-cyan">
+          <div class="recap-card-content">
+            <span class="recap-stat-label">KETERCAPAIAN CPL (OBE)</span>
+            <div class="recap-stat-number" id="resKPICPLRate">0.0%</div>
+            <div class="recap-stat-sub" id="resKPICPLCounts">0 dari 0 Kompetensi Tercapai (&ge;70)</div>
+          </div>
+          <div class="recap-card-icon">🎯</div>
+        </div>
+
+        <!-- Card 4: Status Kelulusan CPL -->
+        <div class="recap-stat-card card-gradient-purple">
+          <div class="recap-card-content">
+            <span class="recap-stat-label">STATUS KELULUSAN CPL</span>
+            <div style="font-size: 1.25rem; font-weight: 800; margin-top: 6px;" id="resKPIStatusBadge">
+              -
+            </div>
+            <div class="recap-stat-sub" id="resKPIStatusDesc" style="margin-top: 4px;">Standar Kelulusan: Nilai &ge; 70.00</div>
+          </div>
+          <div class="recap-card-icon">🏆</div>
+        </div>
+      </div>
+
+      <!-- Visual Analytics Charts Mahasiswa (No-Print) -->
+      <div class="recap-charts-grid no-print" style="margin-top: 16px;">
+        <!-- Chart 1: Radar Chart Kompetensi CPL Mahasiswa vs Standar 70 -->
+        <div class="card chart-box" style="flex: 1.2; min-width: 320px;">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 class="card-title">🕸️ Profil Radar Penguasaan CPL Mahasiswa</h3>
+            <span class="badge-cpl-success" style="font-size: 0.75rem;">Target &ge; 70.00</span>
+          </div>
+          <div style="height: 270px; position: relative;">
+            <canvas id="chartStudentRadar"></canvas>
+          </div>
+          <p style="font-size: 0.78rem; color: #64748b; text-align: center; margin-top: 8px;">
+            Area biru menggambarkan profil nilai CPL mahasiswa dibandingkan garis batas minimal merah (70).
+          </p>
+        </div>
+
+        <!-- Chart 2: Bar Chart Performa Nilai per Mata Kuliah -->
+        <div class="card chart-box" style="flex: 1.5; min-width: 340px;">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 class="card-title">📊 Performa Nilai Akhir per Mata Kuliah</h3>
+            <span class="badge-cpl" style="font-size: 0.75rem;">Skala 0–100</span>
+          </div>
+          <div style="height: 270px; position: relative;">
+            <canvas id="chartStudentCourses"></canvas>
+          </div>
+          <p style="font-size: 0.78rem; color: #64748b; text-align: center; margin-top: 8px;">
+            Nilai akhir dihitung otomatis berdasarkan akumulasi <code>&Sigma; (Nilai Komponen &times; Bobot Komponen)</code>.
+          </p>
+        </div>
+
+        <!-- Chart 3: Doughnut Chart Distribusi Grade Huruf -->
+        <div class="card chart-box" style="flex: 1; min-width: 250px;">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 class="card-title">🍩 Sebaran Grade Huruf</h3>
+            <span class="badge-cpl" style="font-size: 0.75rem;">Predikat</span>
+          </div>
+          <div style="height: 270px; position: relative; display: flex; align-items: center; justify-content: center;">
+            <canvas id="chartStudentGrades"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rincian Hasil Belajar per Mata Kuliah -->
+      <div style="margin-top: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <h3 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin: 0;">📚 Rincian Nilai Komponen & Ketercapaian CPL per Mata Kuliah</h3>
+            <p style="font-size: 0.85rem; color: #64748b; margin: 2px 0 0 0;">Evaluasi transparan antara performa akademik dan penguasaan kompetensi OBE.</p>
+          </div>
+          <span id="resCourseCountBadge" class="badge-cpl" style="font-size: 0.85rem;">0 Mata Kuliah</span>
+        </div>
+
+        <!-- Wadah List Kartu Mata Kuliah -->
+        <div id="coursesDetailContainer" style="display: flex; flex-direction: column; gap: 16px;">
+          <!-- Diisi secara dinamis oleh JavaScript -->
+        </div>
+      </div>
+
+      <!-- Section Tanda Tangan Cetak (Hanya tampil saat print) -->
+      <div class="print-only print-signatures" style="margin-top: 40px; display: flex; justify-content: space-between; page-break-inside: avoid;">
+        <div style="text-align: center; width: 220px;">
+          <p style="margin: 0 0 60px 0; font-size: 0.88rem;">Mengetahui,<br><strong>Ketua Program Studi</strong></p>
+          <p style="margin: 0; font-weight: 700; text-decoration: underline;">(_________________________)</p>
+          <p style="margin: 0; font-size: 0.8rem; color: #64748b;">NIP. ........................................</p>
+        </div>
+        <div style="text-align: center; width: 220px;">
+          <p style="margin: 0 0 60px 0; font-size: 0.88rem;" id="printSignDate">Semarang, -<br><strong>Dosen Pembimbing Akademik</strong></p>
+          <p style="margin: 0; font-weight: 700; text-decoration: underline;">(_________________________)</p>
+          <p style="margin: 0; font-size: 0.8rem; color: #64748b;">NIDN. ........................................</p>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer Publik -->
+  <footer class="public-footer no-print">
+    <div style="max-width: 1140px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; font-size: 0.85rem; color: #64748b;">
+      <div>
+        <strong>GradeCalc OBE System</strong> — Sistem Penilaian & Rekapitulasi Capaian Pembelajaran Lulusan Berbasis Outcome-Based Education.
+      </div>
+      <div>
+        Target Standar Kelulusan CPL: <span style="font-weight: 700; color: #16a34a;">&ge; 70.00</span> | Total Bobot Komponen: <strong>100%</strong>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/static/js/public_lookup.js"></script>
+</body>
+</html>
